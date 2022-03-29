@@ -2,6 +2,16 @@
 #include <SPI.h>
 #include <Arduino.h>
 
+#define GS_BITS 16
+#define BC_BITS 3
+#define CC_BITS 9
+#define FC_BITS 48
+
+#define WRTFC 5
+#define FCWRTEN 15
+#define WRTGS 1
+#define LATGS 3
+
 void TLC5957::init(uint8_t lat, uint8_t sin, uint8_t sclk, uint8_t gsclk)
 {
     _lat = lat;
@@ -20,7 +30,6 @@ void TLC5957::init(uint8_t lat, uint8_t sin, uint8_t sclk, uint8_t gsclk)
 
     digitalWrite(_lat, LOW);
     setGsclkFrequency(_gsclk_frequency);
-
 }
 
 void TLC5957::setSpiBaudRate(uint32_t baud_rate)
@@ -29,12 +38,22 @@ void TLC5957::setSpiBaudRate(uint32_t baud_rate)
     mSettings = SPISettings(_spi_baud_rate, MSBFIRST, SPI_MODE0);
 }
 
+uint32_t TLC5957:: getSpiBaudRate()
+{
+    return _spi_baud_rate;
+}
+
 void TLC5957::setGsclkFrequency(uint32_t gsclk_frequency)
 {
     _gsclk_frequency = gsclk_frequency;
     analogWriteFrequency(_gsclk, _gsclk_frequency);
     analogWriteResolution(1);
     analogWrite(_gsclk, 1);
+}
+
+uint32_t TLC5957::getGsclkFrequency()
+{
+    return _gsclk_frequency;
 }
 
 void TLC5957::latch(int num_edges)
@@ -48,86 +67,239 @@ void TLC5957::latch(int num_edges)
     delayMicroseconds(lat_delay_microseconds);
 }
 
-void TLC5957::setBuffer(uint8_t bit)
+void TLC5957::latch(uint16_t data, uint8_t data_len, uint8_t num_edges)
 {
-    bitWrite(_buffer, _buffer_count--, bit);
-    SPI.beginTransaction(mSettings);
-    if (_buffer_count == -1)
+    SPI.end();
+    digitalWrite(_sclk, LOW);
+    for (uint8_t i = data_len - 1; i >= 0; i--)
     {
-        SPI.transfer(_buffer);
-        _buffer_count = 7;
-        _buffer = 0;
+        digitalWrite(_sin, data >> i & 1);
+        digitalWrite(_sclk, HIGH);
+        digitalWrite(_sclk, LOW);
+        if (i == num_edges - 1)
+            digitalWrite(_lat, HIGH);
+        else if (i == 0)
+            digitalWrite(_lat, LOW);
     }
-    SPI.endTranscation();
+    SPI.begin();
 }
 
-void TLC5957::setLodDetection(bool bit_0, bool bit_1)
+void TLC5957::setAllLed(uint16_t gsvalue)
 {
-    _function_data |= bit_0;
-    _function_data |= bit_1 << 1;
+    for (int8_t chip = tlc_count - 1; chip >= 0; chip--)
+    {
+        for (int8_t led = 0; led < LEDS_PER_CHIP; led++)
+        {
+            for (int8_t channel = 0; channel < COLOR_CHANNEL_COUNT; channel++)
+                grayscale_data[chip][led][channel] = gsvalue;
+        }
+    }
 }
 
-void TLC5957::setTdSelection(bool bit_2, bool bit_3)
+void TLC5957::setAllLedRgb(uint16_t red, uint16_t green, uint16_t blue)
 {
-    _function_data |= bit_2 << 2;
-    _function_data |= bit_3 << 3;
+    if (COLOR_CHANNEL_COUNT == 3)
+    {
+        for (int8_t chip = tlc_count - 1; chip >= 0; chip--)
+        {
+            for (int8_t channel = 0; channel < LEDS_PER_CHIP; channel++)
+            {
+                grayscale_data[chip][channel][2] = blue;
+                grayscale_data[chip][channel][1] = green;
+                grayscale_data[chip][channel][0] = red;
+            }
+        }
+    }
 }
 
-void TLC5957::setGroupDelaySelect(bool bit_4)
+void TLC5957::setLed(int led_number, uint16_t red, uint16_t green, uint16_t blue)
 {
-    _function_data |= bit_4 << 4;
+    int chip = led_number / LEDS_PER_CHIP;
+    int channel = led_number % LEDS_PER_CHIP;
+    grayscale_data[chip][channel][2] = blue;
+    grayscale_data[chip][channel][1] = green;
+    grayscale_data[chip][channel][0] = red;
 }
 
-void TLC5957::setRefreshMode(bool bit_5)
+void TLC5957::setLed(int led_number, uint16_t rgb)
 {
-    _function_data |= bit_5 << 5;
+    int chip = led_number / LEDS_PER_CHIP;
+    int channel = led_number % LEDS_PER_CHIP;
+    grayscale_data[chip][channel][2] = rgb;
+    grayscale_data[chip][channel][1] = rgb;
+    grayscale_data[chip][channel][0] = rgb;
 }
 
-void TLC5957::setGclkEdgeSelect(bool bit_6)
+int TLC5957::updateLeds(double* output_current)
 {
-    _function_data |= bit_6 << 6;
+    double power_output_amps = getTotalCurrent();
+    if (output_current != nullptr)
+        *output_current = power_output_amps;
+    if (enforce_max_current && power_output_amps > max_current_amps)
+        return 1;
+
+    // TODO: timing for latch changes if poker mode is activated
+    latch(WRTGS);
+    for (uint8_t chip = (uint8_t)tlc_count - 1; chip >= 0; chip--)
+    {
+        for (uint8_t led_channel_index = (uint8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
+        {
+            for (uint8_t color_channel_index; (uint8_t)COLOR_CHANNEL_COUNT - 1; color_channel_index >= 0; color_channel_index--)
+            {
+                // TODO; assuming color channel index order is (r: 0, g: 1, b:2)
+                if (chip > 0 && led_channel_index > 0 && color_channel_index > 0)
+                {
+                    SPI.transfer16(grayscale_data[chip][led_channel_index][color_channel_index]);
+                }
+                else
+                {
+                    // manually send last 16 bits
+                    latch(grayscale_data[0][0][0], 16, LATGS);
+                }
+            }
+        }
+    }
+    return 0;
 }
 
-void TLC5957::setPrechargeMode(bool bit_7)
+void TLC5957::clearLeds()
 {
-    _function_data |= bit_7 << 7;
+    latch(WRTGS);
+    for (uint8_t chip = (uint8_t)tlc_count - 1; chip >= 0; chip--)
+    {
+        for (uint8_t led_channel_index = (uint8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
+        {
+            for (uint8_t color_channel_index; (uint8_t)COLOR_CHANNEL_COUNT - 1; color_channel_index >= 0; color_channel_index--)
+            {
+                if (chip > 0 && led_channel_index > 0 && color_channel_index > 0)
+                {
+                    SPI.transfer16(0);
+                }
+                else
+                {
+                    // manually send last 16 bits
+                    latch((uint16_t)0, 16, LATGS);
+                }
+            }
+        }
+    }
 }
 
-void TLC5957::setEspwm(bool bit_8)
+void TLC5957::getLedCurrents(double* currents, uint16_t* gs)
 {
-    _function_data |= bit_8 << 8;
+    for (int color_channel_index = 0; color_channel_index < LEDS_PER_CHIP; color_channel_index++)
+    {
+        // https://www.ti.com/lit/ds/symlink/tlc5957.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&ts=1648586629571
+        // Page 8 (Equation 1 & Equation 2)
+        currents[color_channel_index] = (_maxOutputCurrent * _CC[color_channel_index] / 511 * _BC)
+                                            * (gs[color_channel_index] / 0xFFFF);
+    }
 }
 
-void TLC5957::setBlueCompensation(bool bit_9)
+double TLC5957::getTotalCurrent()
 {
-    _function_data |= bit_9 << 9;
+    uint32_t totalCurrent_channel[COLOR_CHANNEL_COUNT];
+    for (uint8_t color_channel_index = 0; color_channel_index < COLOR_CHANNEL_COUNT; color_channel_index++)
+        totalCurrent_channel[color_channel_index] = 0;
+
+    for (uint8_t color_channel_index = 0; color_channel_index < COLOR_CHANNEL_COUNT; color_channel_index++)
+        for (uint8_t chip = 0; chip < tlc_count; chip++)
+            for (uint8_t led_channel_index = 0; led_channel_index < LEDS_PER_CHIP; led_channel_index++)
+                totalCurrent_channel[color_channel_index] += grayscale_data[chip][led_channel_index][color_channel_index];
+
+    double totalCurrent = 0;
+    for (uint8_t color_channel_index = 0; color_channel_index < COLOR_CHANNEL_COUNT; color_channel_index++)
+        totalCurrent += (_maxOutputCurrent * _CC[color_channel_index] / 511 * _BC)
+                        * (totalCurrent_channel[color_channel_index] / 0xFFFF);
+
+    return totalCurrent;
 }
 
-void TLC5957::setSclkEdgeSelect(bool bit_10)
+void TLC5957::setLodDetection(bool lod_bit_0, bool lod_bit_1)
 {
-    _function_data |= bit_10 << 10;
+    uint64_t new_data = lod_bit_0 | (lod_bit_1 << 1);
+    _function_data |= LOD_DETECTION_MASK & new_data;
 }
 
-void TLC5957::setLowGsEnhancement(bool bit_11, bool bit_12, bool bit_13)
+void TLC5957::setTdSelection(bool td_bit_0, bool td_bit_1)
 {
-    _function_data |= bit_11 << 11;
-    _function_data |= bit_12 << 12;
-    _function_data |= bit_13 << 13;
+    uint64_t new_data = (td_bit_0 << 2) | (td_bit_1 << 3);
+    _function_data |= TD_SELECTION_MASK & new_data;
+}
+
+void TLC5957::setGroupDelaySelect(bool group_delay_bit)
+{
+    uint64_t new_data = group_delay_bit << 4;
+    _function_data |= GROUP_DELAY_SELECT_MASK & new_data;
+}
+
+void TLC5957::setRefreshMode(bool refresh_bit)
+{
+    uint64_t new_data = refresh_bit << 5;
+    _function_data |= REFRESH_MODE_MASK & new_data;
+}
+
+void TLC5957::setGclkEdgeSelect(bool gsclk_edge_bit)
+{
+    uint64_t new_data = gsclk_edge_bit << 6;
+    _function_data |= GSCLK_EDGE_SELECT_MASK & new_data;
+}
+
+void TLC5957::setPrechargeMode(bool precharge_bit)
+{
+    uint64_t new_data = precharge_bit << 7;
+    _function_data |= PRECHARGE_MODE_MASK & new_data;
+}
+
+void TLC5957::setEspwm(bool espwm_bit)
+{
+    uint64_t new_data = espwm_bit << 8;
+    _function_data |= ESPWM_MASK & new_data;
+}
+
+void TLC5957::setBlueCompensation(bool blue_compensation_bit)
+{
+    uint64_t new_data = blue_compensation_bit << 9;
+    _function_data |= BLUE_COMPENSATION_MASK & new_data;
+}
+
+void TLC5957::setSclkEdgeSelect(bool sclk_edge_bit)
+{
+    uint64_t new_data = sclk_edge_bit << 10;
+    _function_data |= SCLK_EDGE_SELECT & new_data;
+}
+
+void TLC5957::setLowGsEnhancement(bool low_gs_bit_0, bool low_gs_bit_1, bool low_gs_bit_3)
+{
+    uint64_t new_data = (low_gs_bit_0 << 11) | (low_gs_bit_1 << 12) | (low_gs_bit_3 << 13);
+    _function_data |= LOW_GS_ENHANCEMENT_MASK & new_data;
+}
+
+void TLC5957::setColorControl(uint16_t cc)
+{
+    setColorControl(cc, cc, cc);
 }
 
 void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
 {
+    uint64_t new_data = 0;
+
     if (ccr > 511)
         ccr = 511;
-    _function_data |= ccr << 14;
+    new_data |= ccr << 14;
 
     if (ccg > 511)
         ccg = 511;
-    _function_data |= ccg << 23;
+    new_data |= ccg << 23;
 
     if (ccb > 511)
         ccb = 511;
-    _function_data |= ccb << 32;
+    new_data |= ccb << 32;
+
+    _function_data | COLOR_CONTROL_MASK & new_data;
+    _CC[0] = ccr;
+    _CC[1] = ccg;
+    _CC[2] = ccb;
 }
 
 void TLC5957::getColorControl(uint16_t* colorControl)
@@ -141,7 +313,9 @@ void TLC5957::setBrightnessControl(uint8_t bc)
 {
     if (bc > 7)
         bc = 7;
-    _function_data |= bc << 41;
+    uint64_t new_data = bc << 41;
+    _function_data |= BRIGHTNESS_CONTROL_MASK & new_data;
+    _BC = bc;
 }
 
 uint8_t TLC5957::getBrightnessControl()
@@ -149,16 +323,18 @@ uint8_t TLC5957::getBrightnessControl()
     return _function_data >> 41 & 7;
 }
 
-void TLC5957::setPokerMode(bool bit_44)
+void TLC5957::setPokerMode(bool poker_mode_bit)
 {
-    _function_data |= bit_44 << 44;
+    uint64_t new_data = poker_mode_bit << 44;
+    _function_data |= POKER_MODE_MASK & new_data;
 }
 
-void TLC5957::setFirstLineImprovement(bool bit_45, bool bit_46, bool bit_47)
+void TLC5957::setFirstLineImprovement(bool first_line_bit_0,
+                                        bool first_line_bit_1,
+                                        bool first_line_bit_2)
 {
-    _function_data |= bit_45 << 45;
-    _function_data |= bit_46 << 46;
-    _function_data |= bit_47 << 47;
+    uint64_t new_data = (first_line_bit_0 << 45) | (first_line_bit_1 << 46) | (first_line_bit_2 << 47);
+    _function_data |= FIRST_LINE_IMPROVEMENT_MASK & new_data;
 }
 
 void TLC5957::updateControl()
@@ -168,28 +344,15 @@ void TLC5957::updateControl()
     uint8_t num_words = FC_BITS / word_size;
     uint8_t buffer;
 
-    // send first 5 bytes
     latch(FCWRTEN);
+    // send first 5 bytes
     for (uint8_t i = num_words - 1; i > 0; i--)
     {
-        buffer = _function_data >> (8 * i) & 256;
+        buffer = _function_data >> (8 * i) & 255;
         SPI.transfer(buffer);
     }
-
     // manually send last 8 bits
-    SPI.end();
-    digitalWrite(_sclk, LOW);
-    for (uint8_t i = 7; i >= 0; i--)
-    {
-        digitalWrite(_sin, _function_data >> i & 1);
-        digitalWrite(_sclk, HIGH);
-        digitalWrite(_sclk, LOW);
-        if (i == 4)
-            digitalWrite(_lat, HIGH);
-        else if (i == 0)
-        digitalWrite(_lat, LOW);
-    }
-    SPI.begin();
+    latch((uint16_t)_function_data, 8, FCWRTEN);
 }
 
 
