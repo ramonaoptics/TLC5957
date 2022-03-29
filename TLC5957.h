@@ -44,23 +44,25 @@ class TLC5957
         double getTotalCurrent();
 
         // Function Control register data
-        void setLodDetection(bool bit_0, bool bit_1);
-        void setTdSelection(bool bit_2, bool bit_3);
-        void setGroupDelaySelect(bool bit_4);
-        void setRefreshMode(bool bit_5);
-        void setGclkEdgeSelect(bool bit_6);
-        void setPrechargeMode(bool bit_7);
-        void setEspwm(bool bit_8);
-        void setBlueCompensation(bool bit_9);
-        void setSclkEdgeSelect(bool bit_10);
-        void setLowGsEnhancement(bool bit_11, bool bit_12, bool bit_13);
+        void setLodDetection(bool lod_bit_0, bool lod_bit_1);
+        void setTdSelection(bool td_bit_0, bool td_bit_1);
+        void setGroupDelaySelect(bool group_delay_bit);
+        void setRefreshMode(bool refresh_mode_bit);
+        void setGclkEdgeSelect(bool gsclk_edge_bit);
+        void setPrechargeMode(bool precharge_bit);
+        void setEspwm(bool espwm_bit);
+        void setBlueCompensation(bool blue_compensation_bit);
+        void setSclkEdgeSelect(bool sclk_edge_bit);
+        void setLowGsEnhancement(bool low_gs_bit_0, bool low_gs_bit_1, bool low_gs_bit_2);
         void setColorControl(uint16_t cc);
         void setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb);
         void getColorControl(uint16_t* colorControl);
         void setBrightnessControl(uint8_t bc);
         uint8_t getBrightnessControl();
-        void setPokerMode(bool bit_44);
-        void setFirstLineImprovement(bool bit_45, bool bit_46, bool bit_47);
+        void setPokerMode(bool poker_mode_bit);
+        void setFirstLineImprovement(bool first_line_bit_0,
+                                        bool first_line_bit_1,
+                                        bool first_line_bit_2);
         void updateControl();
 
         static const uint8_t tlc_count;

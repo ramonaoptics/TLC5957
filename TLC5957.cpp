@@ -233,7 +233,7 @@ void TLC5957::setGroupDelaySelect(bool group_delay_bit)
     _function_data |= GROUP_DELAY_SELECT_MASK & new_data;
 }
 
-void TLC5957::setRefreshMode(bool refresh_bit)
+void TLC5957::setRefreshMode(bool refresh_mode_bit)
 {
     uint64_t new_data = refresh_bit << 5;
     _function_data |= REFRESH_MODE_MASK & new_data;
