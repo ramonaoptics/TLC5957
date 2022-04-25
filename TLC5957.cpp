@@ -29,7 +29,7 @@ void TLC5957::init(uint8_t lat, uint8_t sin, uint8_t sclk, uint8_t gsclk)
     SPI.begin();
 
     digitalWrite(_lat, LOW);
-    setGsclkFrequency(_gsclk_frequency);
+    setGsclkFreq(_gsclk_frequency);
 }
 
 void TLC5957::setSpiBaudRate(uint32_t baud_rate)
@@ -43,7 +43,7 @@ uint32_t TLC5957:: getSpiBaudRate()
     return _spi_baud_rate;
 }
 
-void TLC5957::setGsclkFrequency(uint32_t gsclk_frequency)
+void TLC5957::setGsclkFreq(uint32_t gsclk_frequency)
 {
     _gsclk_frequency = gsclk_frequency;
     analogWriteFrequency(_gsclk, _gsclk_frequency);
@@ -51,7 +51,7 @@ void TLC5957::setGsclkFrequency(uint32_t gsclk_frequency)
     analogWrite(_gsclk, 1);
 }
 
-uint32_t TLC5957::getGsclkFrequency()
+uint32_t TLC5957::getGsclkFreq()
 {
     return _gsclk_frequency;
 }
@@ -144,7 +144,7 @@ int TLC5957::updateLeds(double* output_current)
     {
         for (uint8_t led_channel_index = (uint8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
         {
-            for (uint8_t color_channel_index; (uint8_t)COLOR_CHANNEL_COUNT - 1; color_channel_index >= 0; color_channel_index--)
+            for (uint8_t color_channel_index = (uint8_t)COLOR_CHANNEL_COUNT - 1; color_channel_index >= 0; color_channel_index--)
             {
                 // TODO; assuming color channel index order is (r: 0, g: 1, b:2)
                 if (chip > 0 && led_channel_index > 0 && color_channel_index > 0)
@@ -169,7 +169,7 @@ void TLC5957::clearLeds()
     {
         for (uint8_t led_channel_index = (uint8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
         {
-            for (uint8_t color_channel_index; (uint8_t)COLOR_CHANNEL_COUNT - 1; color_channel_index >= 0; color_channel_index--)
+            for (uint8_t color_channel_index = (uint8_t)COLOR_CHANNEL_COUNT - 1; color_channel_index >= 0; color_channel_index--)
             {
                 if (chip > 0 && led_channel_index > 0 && color_channel_index > 0)
                 {
@@ -235,7 +235,7 @@ void TLC5957::setGroupDelaySelect(bool group_delay_bit)
 
 void TLC5957::setRefreshMode(bool refresh_mode_bit)
 {
-    uint64_t new_data = refresh_bit << 5;
+    uint64_t new_data = refresh_mode_bit << 5;
     _function_data |= REFRESH_MODE_MASK & new_data;
 }
 

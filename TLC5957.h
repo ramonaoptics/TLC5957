@@ -5,7 +5,7 @@
 #include <SPI.h>
 
 #define LOD_DETECTION_MASK ((uint64_t)0b11)
-#define TD_SELECTION_MASK ((uint64_t)0b11 << 2
+#define TD_SELECTION_MASK ((uint64_t)0b11 << 2)
 #define GROUP_DELAY_SELECT_MASK ((uint64_t)0b1 << 4)
 #define REFRESH_MODE_MASK ((uint64_t)0b1 << 5)
 #define GSCLK_EDGE_SELECT_MASK ((uint64_t)0b1 << 6)
@@ -26,8 +26,8 @@ class TLC5957
         void init(uint8_t lat, uint8_t sin, uint8_t sclk, uint8_t gsclk);
         void setSpiBaudRate(uint32_t baud_rate);
         uint32_t getSpiBaudRate();
-        void setGsclkFrequency(uint32_t gsclk_frequency);
-        uint32_t getGsclkFrequency();
+        void setGsclkFreq(uint32_t gsclk_frequency);
+        uint32_t getGsclkFreq();
         void latch(int num_edges);
         void latch(uint16_t data, uint8_t data_len, uint8_t num_edges);
 
@@ -72,6 +72,7 @@ class TLC5957
         static double max_current_amps;
 
         static uint16_t grayscale_data[][LEDS_PER_CHIP][COLOR_CHANNEL_COUNT];
+        // TODO: do we need to track BC and CC for each LED group?
 
     private:
         uint8_t _lat;
