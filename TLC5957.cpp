@@ -313,7 +313,7 @@ void TLC5957::setBrightnessControl(uint8_t bc)
 {
     if (bc > 7)
         bc = 7;
-    uint64_t new_data = bc << 41;
+    uint64_t new_data = (uint64_t)bc << 41;
     _function_data |= BRIGHTNESS_CONTROL_MASK & new_data;
     _BC = bc;
 }
@@ -333,7 +333,9 @@ void TLC5957::setFirstLineImprovement(bool first_line_bit_0,
                                         bool first_line_bit_1,
                                         bool first_line_bit_2)
 {
-    uint64_t new_data = (first_line_bit_0 << 45) | (first_line_bit_1 << 46) | (first_line_bit_2 << 47);
+    uint64_t new_data = ((uint64_t)first_line_bit_0 << 45)
+                        | ((uint64_t)first_line_bit_1 << 46)
+                        | ((uint64_t)first_line_bit_2 << 47);
     _function_data |= FIRST_LINE_IMPROVEMENT_MASK & new_data;
 }
 
