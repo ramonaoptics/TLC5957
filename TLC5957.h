@@ -73,6 +73,7 @@ class TLC5957
 
         static uint16_t grayscale_data[][LEDS_PER_CHIP][COLOR_CHANNEL_COUNT];
         // TODO: do we need to track BC and CC for each LED group?
+        // TODO: do we need rgb pin order?
 
     private:
         uint8_t _lat;

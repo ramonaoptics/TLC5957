@@ -290,13 +290,13 @@ void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
 
     if (ccg > 511)
         ccg = 511;
-    new_data |= ccg << 23;
+    new_data |= (uint32_t)ccg << 23;
 
     if (ccb > 511)
         ccb = 511;
-    new_data |= ccb << 32;
+    new_data |= (uint64_t)ccb << 32;
 
-    _function_data | COLOR_CONTROL_MASK & new_data;
+    _function_data |= COLOR_CONTROL_MASK & new_data;
     _CC[0] = ccr;
     _CC[1] = ccg;
     _CC[2] = ccb;
