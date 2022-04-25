@@ -187,7 +187,7 @@ void TLC5957::clearLeds()
 
 void TLC5957::getLedCurrents(double* currents, uint16_t* gs)
 {
-    for (int color_channel_index = 0; color_channel_index < LEDS_PER_CHIP; color_channel_index++)
+    for (int color_channel_index = 0; color_channel_index < COLOR_CHANNEL_COUNT; color_channel_index++)
     {
         // https://www.ti.com/lit/ds/symlink/tlc5957.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&ts=1648586629571
         // Page 8 (Equation 1 & Equation 2)
@@ -325,7 +325,7 @@ uint8_t TLC5957::getBrightnessControl()
 
 void TLC5957::setPokerMode(bool poker_mode_bit)
 {
-    uint64_t new_data = poker_mode_bit << 44;
+    uint64_t new_data = (uint64_t)poker_mode_bit << 44;
     _function_data |= POKER_MODE_MASK & new_data;
 }
 
