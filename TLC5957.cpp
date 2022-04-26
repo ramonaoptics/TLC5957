@@ -67,14 +67,18 @@ void TLC5957::latch(int num_edges)
     delayMicroseconds(lat_delay_microseconds);
 }
 
+// https://www.ti.com/lit/ds/symlink/tlc5957.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&ts=1648586629571
+// Page 10-12
 void TLC5957::latch(uint16_t data, uint8_t data_len, uint8_t num_edges)
 {
+    uint64_t buffer_delay_us = 1000;
     SPI.end();
     digitalWrite(_sclk, LOW);
     for (uint8_t i = data_len - 1; i >= 0; i--)
     {
         digitalWrite(_sin, data >> i & 1);
         digitalWrite(_sclk, HIGH);
+        delayMicroseconds(buffer_delay_us);
         digitalWrite(_sclk, LOW);
         if (i == num_edges - 1)
             digitalWrite(_lat, HIGH);
@@ -215,15 +219,15 @@ double TLC5957::getTotalCurrent()
     return totalCurrent;
 }
 
-void TLC5957::setLodDetection(bool lod_bit_0, bool lod_bit_1)
+void TLC5957::setLodDetection(uint8_t lod)
 {
-    uint64_t new_data = lod_bit_0 | (lod_bit_1 << 1);
+    uint64_t new_data = ((uint64_t)lod) << 1;
     _function_data |= LOD_DETECTION_MASK & new_data;
 }
 
-void TLC5957::setTdSelection(bool td_bit_0, bool td_bit_1)
+void TLC5957::setTdSelection(uint8_t td)
 {
-    uint64_t new_data = (td_bit_0 << 2) | (td_bit_1 << 3);
+    uint64_t new_data = ((uint64_t)td) << 2;
     _function_data |= TD_SELECTION_MASK & new_data;
 }
 
@@ -269,9 +273,9 @@ void TLC5957::setSclkEdgeSelect(bool sclk_edge_bit)
     _function_data |= SCLK_EDGE_SELECT & new_data;
 }
 
-void TLC5957::setLowGsEnhancement(bool low_gs_bit_0, bool low_gs_bit_1, bool low_gs_bit_3)
+void TLC5957::setLowGsEnhancement(uint8_t enhancement)
 {
-    uint64_t new_data = (low_gs_bit_0 << 11) | (low_gs_bit_1 << 12) | (low_gs_bit_3 << 13);
+    uint64_t new_data = ((uint64_t)enhancement) << 11;
     _function_data |= LOW_GS_ENHANCEMENT_MASK & new_data;
 }
 
@@ -290,11 +294,11 @@ void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
 
     if (ccg > 511)
         ccg = 511;
-    new_data |= (uint32_t)ccg << 23;
+    new_data |= ((uint32_t)ccg) << 23;
 
     if (ccb > 511)
         ccb = 511;
-    new_data |= (uint64_t)ccb << 32;
+    new_data |= ((uint64_t)ccb) << 32;
 
     _function_data |= COLOR_CONTROL_MASK & new_data;
     _CC[0] = ccr;
@@ -304,16 +308,16 @@ void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
 
 void TLC5957::getColorControl(uint16_t* colorControl)
 {
-    colorControl[0] = _function_data >> 32 & 511;
-    colorControl[1] = _function_data >> 23 & 511;
-    colorControl[1] = _function_data >> 14 & 511;
+    colorControl[0] = (_function_data >> 32) & 0x01FF;
+    colorControl[1] = (_function_data >> 23) & 0x01FF;
+    colorControl[2] = (_function_data >> 14) & 0x01FF;
 }
 
 void TLC5957::setBrightnessControl(uint8_t bc)
 {
     if (bc > 7)
         bc = 7;
-    uint64_t new_data = (uint64_t)bc << 41;
+    uint64_t new_data = ((uint64_t)bc) << 41;
     _function_data |= BRIGHTNESS_CONTROL_MASK & new_data;
     _BC = bc;
 }
@@ -329,13 +333,9 @@ void TLC5957::setPokerMode(bool poker_mode_bit)
     _function_data |= POKER_MODE_MASK & new_data;
 }
 
-void TLC5957::setFirstLineImprovement(bool first_line_bit_0,
-                                        bool first_line_bit_1,
-                                        bool first_line_bit_2)
+void TLC5957::setFirstLineImprovement(uint8_t first_line_improvement)
 {
-    uint64_t new_data = ((uint64_t)first_line_bit_0 << 45)
-                        | ((uint64_t)first_line_bit_1 << 46)
-                        | ((uint64_t)first_line_bit_2 << 47);
+    uint64_t new_data = ((uint64_t)first_line_improvement) << 45;
     _function_data |= FIRST_LINE_IMPROVEMENT_MASK & new_data;
 }
 
@@ -355,6 +355,7 @@ void TLC5957::updateControl()
     }
     // manually send last 8 bits
     latch((uint16_t)_function_data, 8, FCWRTEN);
+
 }
 
 

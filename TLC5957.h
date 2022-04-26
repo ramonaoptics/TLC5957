@@ -44,8 +44,8 @@ class TLC5957
         double getTotalCurrent();
 
         // Function Control register data
-        void setLodDetection(bool lod_bit_0, bool lod_bit_1);
-        void setTdSelection(bool td_bit_0, bool td_bit_1);
+        void setLodDetection(uint8_t lod);
+        void setTdSelection(uint8_t td);
         void setGroupDelaySelect(bool group_delay_bit);
         void setRefreshMode(bool refresh_mode_bit);
         void setGclkEdgeSelect(bool gsclk_edge_bit);
@@ -53,16 +53,14 @@ class TLC5957
         void setEspwm(bool espwm_bit);
         void setBlueCompensation(bool blue_compensation_bit);
         void setSclkEdgeSelect(bool sclk_edge_bit);
-        void setLowGsEnhancement(bool low_gs_bit_0, bool low_gs_bit_1, bool low_gs_bit_2);
+        void setLowGsEnhancement(uint8_t enhancement);
         void setColorControl(uint16_t cc);
         void setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb);
         void getColorControl(uint16_t* colorControl);
         void setBrightnessControl(uint8_t bc);
         uint8_t getBrightnessControl();
         void setPokerMode(bool poker_mode_bit);
-        void setFirstLineImprovement(bool first_line_bit_0,
-                                        bool first_line_bit_1,
-                                        bool first_line_bit_2);
+        void setFirstLineImprovement(uint8_t first_line_improvement);
         void updateControl();
 
         static const uint8_t tlc_count;
