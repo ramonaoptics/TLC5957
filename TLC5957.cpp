@@ -343,19 +343,19 @@ void TLC5957::setFirstLineImprovement(uint8_t first_line_improvement)
 void TLC5957::updateControl()
 {
 
-    Serial.printf("tlc_update\n");
+    // Serial.printf("tlc_update\n");
     uint8_t word_size = 8; // bits
     uint8_t num_words = FC_BITS / word_size;
     uint8_t buffer;
 
     latch(FCWRTEN);
-    Serial.printf("first_latch\n");
+    // Serial.printf("first_latch\n");
     // send first 5 bytes
     // Serial.printf("%" PRIu64 "\n", _function_data);
     for (uint8_t i = num_words; i > 0; i--)
     {
         buffer = _function_data >> (8 * i) & 255;
-        Serial.printf("%d.", buffer);
+        // Serial.printf("%d.", buffer);
         SPI.transfer(buffer);
     }
     latch(WRTFC);
