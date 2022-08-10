@@ -342,6 +342,7 @@ void TLC5957::setFirstLineImprovement(uint8_t first_line_improvement)
 void TLC5957::updateControl()
 {
 
+    Serial.printf("tlc_update\n");
     uint8_t word_size = 8; // bits
     uint8_t num_words = FC_BITS / word_size;
     uint8_t buffer;
