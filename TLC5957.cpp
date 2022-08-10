@@ -348,6 +348,7 @@ void TLC5957::updateControl()
     uint8_t buffer;
 
     latch(FCWRTEN);
+    Serial.printf("first_latch\n");
     // send first 5 bytes
     for (uint8_t i = num_words - 1; i > 0; i--)
     {
