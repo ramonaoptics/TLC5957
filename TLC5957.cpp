@@ -355,7 +355,7 @@ void TLC5957::updateControl()
     for (uint8_t i = num_words; i > 0; i--)
     {
         buffer = _function_data >> (8 * i) & 255;
-        Serial.printf("buffer");
+        Serial.printf("%d.", buffer);
         SPI.transfer(buffer);
     }
     latch(WRTFC);
