@@ -282,6 +282,7 @@ void TLC5957::setLowGsEnhancement(uint8_t enhancement)
 
 void TLC5957::setColorControl(uint16_t cc)
 {
+    Serial.printf("set_color_control\n");
     setColorControl(cc, cc, cc);
 }
 
