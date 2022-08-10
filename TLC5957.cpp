@@ -353,10 +353,10 @@ void TLC5957::updateControl()
     for (uint8_t i = num_words - 1; i > 0; i--)
     {
         buffer = _function_data >> (8 * i) & 255;
-        Serial.printf("%d", buffer);
+        Serial.printf("%d\n", buffer);
         SPI.transfer(buffer);
     }
-    Serial.printf("\n");
+    // Serial.printf("\n");
     // manually send last 8 bits
     latch((uint16_t)_function_data, 8, FCWRTEN);
 
