@@ -1,6 +1,7 @@
 #include "TLC5957.h"
 #include <SPI.h>
 #include <Arduino.h>
+#include <inttypes.h>
 
 #define GS_BITS 16
 #define BC_BITS 3
@@ -350,7 +351,7 @@ void TLC5957::updateControl()
     latch(FCWRTEN);
     Serial.printf("first_latch\n");
     // send first 5 bytes
-    Serial.printf("%ld\n", (long)_function_data);
+    Serial.printf("%" PRIu64 "\n", _function_data);
     for (uint8_t i = num_words - 1; i > 0; i--)
     {
         buffer = _function_data >> (8 * i) & 255;
