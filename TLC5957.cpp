@@ -91,10 +91,8 @@ void TLC5957::latch(uint16_t data, uint8_t data_len, uint8_t num_edges)
 
 void TLC5957::setAllLed(uint16_t gsvalue)
 {
-    Serial.printf("set_all_led\n");
     for (int8_t chip = tlc_count - 1; chip >= 0; chip--)
     {
-        Serial.printf("chip_%d", chip);
         for (int8_t led = 0; led < LEDS_PER_CHIP; led++)
         {
             for (int8_t channel = 0; channel < COLOR_CHANNEL_COUNT; channel++)
@@ -139,14 +137,16 @@ void TLC5957::setLed(int led_number, uint16_t rgb)
 
 int TLC5957::updateLeds(double* output_current)
 {
+    Serial.printf("update_leds\n");
     double power_output_amps = getTotalCurrent();
     if (output_current != nullptr)
         *output_current = power_output_amps;
     if (enforce_max_current && power_output_amps > max_current_amps)
         return 1;
-
+    Serial.printf("max_current\n");
     // TODO: timing for latch changes if poker mode is activated
     latch(WRTGS);
+    Serial.printf("latch\n");
     for (uint8_t chip = (uint8_t)tlc_count - 1; chip >= 0; chip--)
     {
         for (uint8_t led_channel_index = (uint8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
