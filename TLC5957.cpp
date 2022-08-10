@@ -282,7 +282,6 @@ void TLC5957::setLowGsEnhancement(uint8_t enhancement)
 
 void TLC5957::setColorControl(uint16_t cc)
 {
-    Serial.printf("set_color_control\n");
     setColorControl(cc, cc, cc);
 }
 
@@ -352,15 +351,17 @@ void TLC5957::updateControl()
     latch(FCWRTEN);
     Serial.printf("first_latch\n");
     // send first 5 bytes
-    Serial.printf("%" PRIu64 "\n", _function_data);
-    for (uint8_t i = num_words - 1; i > 0; i--)
+    // Serial.printf("%" PRIu64 "\n", _function_data);
+    for (uint8_t i = num_words; i > 0; i--)
     {
         buffer = _function_data >> (8 * i) & 255;
+        Serial.printf("buffer");
         SPI.transfer(buffer);
     }
+    latch(WRTFC);
     // Serial.printf("\n");
     // manually send last 8 bits
-    latch((uint16_t)_function_data, 8, FCWRTEN);
+    // latch((uint16_t)_function_data, 8, FCWRTEN);
 
 }
 
