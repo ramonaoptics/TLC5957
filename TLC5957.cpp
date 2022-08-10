@@ -91,8 +91,10 @@ void TLC5957::latch(uint16_t data, uint8_t data_len, uint8_t num_edges)
 
 void TLC5957::setAllLed(uint16_t gsvalue)
 {
+    Serial.printf("set_all_led\n");
     for (int8_t chip = tlc_count - 1; chip >= 0; chip--)
     {
+        Serial.printf("chip_%d", chip);
         for (int8_t led = 0; led < LEDS_PER_CHIP; led++)
         {
             for (int8_t channel = 0; channel < COLOR_CHANNEL_COUNT; channel++)
