@@ -72,7 +72,7 @@ void TLC5957::latch(int num_edges)
 // Page 10-12
 void TLC5957::latch(uint16_t data, uint8_t data_len, uint8_t num_edges)
 {
-    Serial.prinf("manual latch\n");
+    Serial.printf("manual latch\n");
     uint64_t buffer_delay_us = 1000;
     SPI.end();
     digitalWrite(_sclk, LOW);
