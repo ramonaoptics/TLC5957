@@ -152,19 +152,25 @@ int TLC5957::updateLeds(double* output_current)
         {
             for (uint8_t color_channel_index = (uint8_t)COLOR_CHANNEL_COUNT - 1; color_channel_index >= 0; color_channel_index--)
             {
+                SPI.transfer16(grayscale_data[chip][led_channel_index][color_channel_index]);
+
+
+
+
                 // TODO; assuming color channel index order is (r: 0, g: 1, b:2)
-                if (chip > 0 && led_channel_index > 0 && color_channel_index > 0)
-                {
-                    SPI.transfer16(grayscale_data[chip][led_channel_index][color_channel_index]);
-                }
-                else
-                {
-                    Serial.printf("second latch attempt\n");
+                // if (chip > 0 && led_channel_index > 0 && color_channel_index > 0)
+                // {
+                    // SPI.transfer16(grayscale_data[chip][led_channel_index][color_channel_index]);
+                // }
+                // else
+                // {
+                    // Serial.printf("second latch attempt\n");
                     // manually send last 16 bits
-                    latch(grayscale_data[0][0][0], 16, LATGS);
-                    Serial.printf("second latch\n");
-                }
+                    // latch(grayscale_data[0][0][0], 16, LATGS);
+                    // Serial.printf("second latch\n");
+                // }
             }
+            latch(LATGS);
         }
     }
     return 0;
