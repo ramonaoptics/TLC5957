@@ -172,6 +172,7 @@ int TLC5957::updateLeds(double* output_current)
             latch(LATGS);
         }
     }
+    Serial.printf("update_led\n");
     return 0;
 }
 
