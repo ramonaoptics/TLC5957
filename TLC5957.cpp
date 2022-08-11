@@ -170,7 +170,9 @@ int TLC5957::updateLeds(double* output_current)
                     // Serial.printf("second latch\n");
                 // }
             }
+            Serial.printf("latch attempt\n");
             latch(LATGS);
+            Serial.printf("latch\n");
         }
     }
     return 0;
