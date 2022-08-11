@@ -138,7 +138,6 @@ void TLC5957::setLed(int led_number, uint16_t rgb)
 
 int TLC5957::updateLeds(double* output_current)
 {
-    Serial.printf("update_leds\n");
     double power_output_amps = getTotalCurrent();
     if (output_current != nullptr)
         *output_current = power_output_amps;
@@ -171,9 +170,7 @@ int TLC5957::updateLeds(double* output_current)
                     // Serial.printf("second latch\n");
                 // }
             }
-            Serial.printf("latch attempt\n");
             latch(LATGS);
-            Serial.printf("latch\n");
         }
     }
     return 0;
