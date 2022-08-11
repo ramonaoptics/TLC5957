@@ -77,6 +77,7 @@ void TLC5957::latch(uint16_t data, uint8_t data_len, uint8_t num_edges)
     digitalWrite(_sclk, LOW);
     for (uint8_t i = data_len - 1; i >= 0; i--)
     {
+        Serial.printf("%d.", data >> i & 1);
         digitalWrite(_sin, data >> i & 1);
         digitalWrite(_sclk, HIGH);
         delayMicroseconds(buffer_delay_us);
@@ -360,10 +361,10 @@ void TLC5957::updateControl()
         // Serial.printf("%d.", buffer);
         SPI.transfer(buffer);
     }
-    latch(WRTFC);
+    // latch(WRTFC);
     // Serial.printf("\n");
     // manually send last 8 bits
-    // latch((uint16_t)_function_data, 8, FCWRTEN);
+    latch((uint16_t)_function_data, 8, FCWRTEN);
 
 }
 
