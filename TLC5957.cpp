@@ -145,18 +145,14 @@ int TLC5957::updateLeds(double* output_current)
     if (enforce_max_current && power_output_amps > max_current_amps)
         return 1;
     // TODO: timing for latch changes if poker mode is activated
-    Serial.printf("first latch attempt\n");
     latch(WRTGS);
-    Serial.printf("latch\n");
     for (uint8_t chip = (uint8_t)tlc_count - 1; chip >= 0; chip--)
     {
-        Serial.printf("%d.\n", chip);
         for (uint8_t led_channel_index = (uint8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
         {
-            Serial.printf("%d.", led_channel_index);
             for (uint8_t color_channel_index = (uint8_t)COLOR_CHANNEL_COUNT - 1; color_channel_index >= 0; color_channel_index--)
             {
-                Serial.printf("%d.", color_channel_index);
+                Serial.printf("%d.\n", color_channel_index);
                 SPI.transfer16(grayscale_data[chip][led_channel_index][color_channel_index]);
 
 
