@@ -148,11 +148,11 @@ int TLC5957::updateLeds(double* output_current)
     latch(WRTGS);
     for (uint8_t chip = (uint8_t)tlc_count - 1; chip >= 0; chip--)
     {
-        Serial.printf("%d.", chip);
         for (uint8_t led_channel_index = (uint8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
         {
             for (uint8_t color_channel_index = (uint8_t)COLOR_CHANNEL_COUNT - 1; color_channel_index >= 0; color_channel_index--)
             {
+                Serial.printf("transfer\n");
                 SPI.transfer16(grayscale_data[chip][led_channel_index][color_channel_index]);
 
 
