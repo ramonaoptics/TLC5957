@@ -150,6 +150,7 @@ int TLC5957::updateLeds(double* output_current)
     Serial.printf("latch\n");
     for (uint8_t chip = (uint8_t)tlc_count - 1; chip >= 0; chip--)
     {
+        Serial.pritnf("%d.", chip);
         for (uint8_t led_channel_index = (uint8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
         {
             Serial.printf("%d.", led_channel_index);
