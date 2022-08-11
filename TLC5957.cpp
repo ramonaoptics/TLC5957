@@ -78,7 +78,6 @@ void TLC5957::latch(uint16_t data, uint8_t data_len, uint8_t num_edges)
     digitalWrite(_sclk, LOW);
     for (uint8_t i = data_len - 1; i >= 0; i--)
     {
-        Serial.printf("%d.", data >> i & 1);
         digitalWrite(_sin, data >> i & 1);
         digitalWrite(_sclk, HIGH);
         delayMicroseconds(buffer_delay_us);
@@ -88,7 +87,6 @@ void TLC5957::latch(uint16_t data, uint8_t data_len, uint8_t num_edges)
         else if (i == 0)
             digitalWrite(_lat, LOW);
     }
-    Serial.printf("\n");
     SPI.begin();
 }
 
