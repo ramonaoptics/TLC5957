@@ -361,11 +361,10 @@ void TLC5957::updateControl()
         // Serial.printf("%d.", buffer);
         SPI.transfer(buffer);
     }
-    // latch(WRTFC);
+    latch(WRTFC);
     // Serial.printf("\n");
     // manually send last 8 bits
-    latch((uint16_t)_function_data, 8, FCWRTEN);
-
+    // latch((uint16_t)_function_data, 8, FCWRTEN);
 }
 
 
