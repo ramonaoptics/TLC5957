@@ -147,7 +147,7 @@ int TLC5957::updateLeds(double* output_current)
     // TODO: timing for latch changes if poker mode is activated
     Serial.printf("first latch attempt\n");
     latch(WRTGS);
-    Serial.pritnf("latch\n");
+    Serial.printf("latch\n");
     for (uint8_t chip = (uint8_t)tlc_count - 1; chip >= 0; chip--)
     {
         for (uint8_t led_channel_index = (uint8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
