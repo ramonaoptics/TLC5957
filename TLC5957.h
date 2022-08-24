@@ -23,7 +23,7 @@ class TLC5957
 {
     public:
         // SPI
-        void init(uint8_t lat, uint8_t sin, uint8_t sclk, uint8_t gsclk);
+        void init(uint8_t lat, uint8_t spi_mosi, uint8_t spi_clk, uint8_t gsclk);
         void setSpiBaudRate(uint32_t baud_rate);
         uint32_t getSpiBaudRate();
         void setGsclkFreq(uint32_t gsclk_frequency);
@@ -75,11 +75,11 @@ class TLC5957
 
     private:
         uint8_t _lat;
-        uint8_t _sin;
-        uint8_t _sclk;
+        uint8_t _spi_mosi;
+        uint8_t _spi_clk;
         uint8_t _gsclk;
 
-        uint64_t _function_data = 0;
+        uint64_t _function_data;
 
         // Analog Control Values)
         uint8_t _BC;

@@ -13,23 +13,26 @@
 #define WRTGS 1
 #define LATGS 3
 
-void TLC5957::init(uint8_t lat, uint8_t sin, uint8_t sclk, uint8_t gsclk)
+void TLC5957::init(uint8_t lat, uint8_t spi_mosi, uint8_t spi_clk, uint8_t gsclk)
 {
-    _lat = lat;
-    _sin = sin;
-    _sclk = sclk;
-    _gsclk = gsclk;
+    this->_lat = lat;
+    this->_spi_mosi = spi_mosi;
+    this->_spi_clk = spi_clk;
+    this->_gsclk = gsclk;
 
-    pinMode(_lat, OUTPUT);
-    pinMode(_sin, OUTPUT);
-    pinMode(_sclk, OUTPUT);
-    pinMode(_gsclk, OUTPUT);
+    this->_function_data = 0;
+    this->_BC = 0;
+    this->_CC[0] = 0;
+    this->_CC[1] = 0;
+    this->_CC[2] = 0;
 
-    mSettings = SPISettings(_spi_baud_rate, MSBFIRST, SPI_MODE0);
-    SPI.setMOSI(_sin);
+    this->mSettings = SPISettings(_spi_baud_rate, MSBFIRST, SPI_MODE0);
+    SPI.setMOSI(_spi_mosi);
     SPI.begin();
 
+    pinMode(_lat, OUTPUT);
     digitalWrite(_lat, LOW);
+    pinMode(_gsclk, OUTPUT);
     setGsclkFreq(_gsclk_frequency);
 }
 
@@ -75,13 +78,13 @@ void TLC5957::latch(uint16_t data, uint8_t data_len, uint8_t num_edges)
     Serial.printf("manual latch\n");
     uint64_t buffer_delay_us = 1000;
     SPI.end();
-    digitalWrite(_sclk, LOW);
+    digitalWrite(_spi_clk, LOW);
     for (uint8_t i = data_len - 1; i >= 0; i--)
     {
-        digitalWrite(_sin, data >> i & 1);
-        digitalWrite(_sclk, HIGH);
+        digitalWrite(_spi_mosi, data >> i & 1);
+        digitalWrite(_spi_clk, HIGH);
         delayMicroseconds(buffer_delay_us);
-        digitalWrite(_sclk, LOW);
+        digitalWrite(_spi_clk, LOW);
         if (i == num_edges - 1)
             digitalWrite(_lat, HIGH);
         else if (i == 0)
