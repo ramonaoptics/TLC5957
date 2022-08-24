@@ -300,7 +300,7 @@ void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
 
     if (ccr > 511)
         ccr = 511;
-    new_data |= ccr << 32;
+    new_data |= ((uint64_t)ccr) << 32;
 
     if (ccg > 511)
         ccg = 511;
@@ -308,7 +308,7 @@ void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
 
     if (ccb > 511)
         ccb = 511;
-    new_data |= ((uint64_t)ccb) << 14;
+    new_data |= ccb << 14;
     Serial.printf("%d\n", new_data);
 
     _function_data |= COLOR_CONTROL_MASK & new_data;
