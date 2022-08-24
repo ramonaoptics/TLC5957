@@ -311,7 +311,10 @@ void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
     new_data |= (((uint64_t)ccb) << 14);
 
     Serial.printf("%016llX\n", _function_data);
-    _function_data |= (COLOR_CONTROL_MASK & new_data);
+    _function_data = (
+        _function_data & (~COLOR_CONTROL_MASK) |
+        (COLOR_CONTROL_MASK & new_data)
+    );
     Serial.printf("%016llX\n", new_data);
     Serial.printf("%016llX\n", COLOR_CONTROL_MASK);
     Serial.printf("%016llX\n", _function_data);
