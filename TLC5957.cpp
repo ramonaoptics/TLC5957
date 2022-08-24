@@ -301,17 +301,17 @@ void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
     if (ccr > 511)
         ccr = 511;
     new_data |= ((uint64_t)ccr) << 32;
-    Serial.pritnf("%" PRId64 "\n", new_data);
+    Serial.printf("%" PRId64 "\n", new_data);
 
     if (ccg > 511)
         ccg = 511;
     new_data |= ((uint32_t)ccg) << 23;
-    Serial.pritnf("%" PRId64 "\n", new_data);
+    Serial.printf("%" PRId64 "\n", new_data);
 
     if (ccb > 511)
         ccb = 511;
     new_data |= ccb << 14;
-    Serial.pritnf("%" PRId64 "\n", new_data);
+    Serial.printf("%" PRId64 "\n", new_data);
 
     _function_data |= COLOR_CONTROL_MASK & new_data;
     _CC[0] = ccr;
