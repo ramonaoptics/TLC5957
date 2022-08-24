@@ -295,16 +295,18 @@ void TLC5957::setColorControl(uint16_t cc)
 
 void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
 {
-    Serial.printf("%d.%d.%d", ccr, ccg, ccb);
+    Serial.printf("%d.%d.%d\n", ccr, ccg, ccb);
     uint64_t new_data = 0;
 
     if (ccr > 511)
         ccr = 511;
     new_data |= ((uint64_t)ccr) << 32;
+    Serial.printf("%d\n", new_data);
 
     if (ccg > 511)
         ccg = 511;
     new_data |= ((uint32_t)ccg) << 23;
+    Serial.printf("%d\n", new_data);
 
     if (ccb > 511)
         ccb = 511;
