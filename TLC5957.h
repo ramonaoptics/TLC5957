@@ -93,8 +93,8 @@ class TLC5957
 
         // SPI
         SPISettings mSettings;
-        uint32_t _spi_baud_rate = 1'000'000;
-        uint32_t _gsclk_frequency = 2'500'000;
+        uint32_t _spi_baud_rate;
+        uint32_t _gsclk_frequency;
 };
 
 #endif

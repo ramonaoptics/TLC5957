@@ -13,6 +13,9 @@
 #define WRTGS 1
 #define LATGS 3
 
+#define DEFAULT_SPI_BAUD_RATE 1'000'000
+#define DEFAULT_GSCLK_FREQUENCY 2'500'000
+
 void TLC5957::init(uint8_t lat, uint8_t spi_mosi, uint8_t spi_clk, uint8_t gsclk)
 {
     this->_lat = lat;
@@ -26,14 +29,15 @@ void TLC5957::init(uint8_t lat, uint8_t spi_mosi, uint8_t spi_clk, uint8_t gsclk
     this->_CC[1] = 0;
     this->_CC[2] = 0;
 
-    this->mSettings = SPISettings(_spi_baud_rate, MSBFIRST, SPI_MODE0);
-    SPI.setMOSI(_spi_mosi);
+    this->setSpiBaudRate(DEFAULT_SPI_BAUD_RATE);
+
+    SPI.setMOSI(this->_spi_mosi);
     SPI.begin();
 
-    pinMode(_lat, OUTPUT);
-    digitalWrite(_lat, LOW);
-    pinMode(_gsclk, OUTPUT);
-    setGsclkFreq(_gsclk_frequency);
+    pinMode(this->_lat, OUTPUT);
+    digitalWrite(this->_lat, LOW);
+    pinMode(this->_gsclk, OUTPUT);
+    setGsclkFreq(DEFAULT_GSCLK_FREQUENCY);
 }
 
 void TLC5957::setSpiBaudRate(uint32_t baud_rate)
