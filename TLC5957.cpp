@@ -231,61 +231,91 @@ double TLC5957::getTotalCurrent()
 void TLC5957::setLodDetection(uint8_t lod)
 {
     uint64_t new_data = ((uint64_t)lod) << 1;
-    _function_data |= LOD_DETECTION_MASK & new_data;
+    _function_data = (
+        _function_data & (~LOD_DETECTION_MASK) |
+        (LOD_DETECTION_MASK & new_data)
+    );
 }
 
 void TLC5957::setTdSelection(uint8_t td)
 {
     uint64_t new_data = ((uint64_t)td) << 2;
-    _function_data |= TD_SELECTION_MASK & new_data;
+    _function_data = (
+        _function_data & (~TD_SELECTION_MASK) |
+        (TD_SELECTION_MASK & new_data)
+    );
 }
 
 void TLC5957::setGroupDelaySelect(bool group_delay_bit)
 {
     uint64_t new_data = group_delay_bit << 4;
-    _function_data |= GROUP_DELAY_SELECT_MASK & new_data;
+    _function_data = (
+        _function_data & (~GROUP_DELAY_SELECT_MASK) |
+        (GROUP_DELAY_SELECT_MASK & new_data)
+    );
 }
 
 void TLC5957::setRefreshMode(bool refresh_mode_bit)
 {
     uint64_t new_data = refresh_mode_bit << 5;
-    _function_data |= REFRESH_MODE_MASK & new_data;
+    _function_data = (
+        _function_data & (~REFRESH_MODE_MASK) |
+        (REFRESH_MODE_MASK & new_data)
+    );
 }
 
 void TLC5957::setGclkEdgeSelect(bool gsclk_edge_bit)
 {
     uint64_t new_data = gsclk_edge_bit << 6;
-    _function_data |= GSCLK_EDGE_SELECT_MASK & new_data;
+    _function_data = (
+        _function_data & (~GSCLK_EDGE_SELECT_MASK) |
+        (GSCLK_EDGE_SELECT_MASK & new_data)
+    );
 }
 
 void TLC5957::setPrechargeMode(bool precharge_bit)
 {
     uint64_t new_data = precharge_bit << 7;
-    _function_data |= PRECHARGE_MODE_MASK & new_data;
+    _function_data = (
+        _function_data & (~PRECHARGE_MODE_MASK) |
+        (PRECHARGE_MODE_MASK & new_data)
+    );
 }
 
 void TLC5957::setEspwm(bool espwm_bit)
 {
     uint64_t new_data = espwm_bit << 8;
-    _function_data |= ESPWM_MASK & new_data;
+    _function_data = (
+        _function_data & (~ESPWM_MASK) |
+        (ESPWM_MASK & new_data)
+    );
 }
 
 void TLC5957::setBlueCompensation(bool blue_compensation_bit)
 {
     uint64_t new_data = blue_compensation_bit << 9;
-    _function_data |= BLUE_COMPENSATION_MASK & new_data;
+    _function_data = (
+        _function_data & (~BLUE_COMPENSATION_MASK) |
+        (BLUE_COMPENSATION_MASK & new_data)
+    );
 }
 
 void TLC5957::setSclkEdgeSelect(bool sclk_edge_bit)
 {
     uint64_t new_data = sclk_edge_bit << 10;
-    _function_data |= SCLK_EDGE_SELECT & new_data;
+    _function_data = (
+        _function_data & (~SCLK_EDGE_SELECT) |
+        (SCLK_EDGE_SELECT & new_data)
+    );
 }
 
 void TLC5957::setLowGsEnhancement(uint8_t enhancement)
 {
     uint64_t new_data = ((uint64_t)enhancement) << 11;
-    _function_data |= LOW_GS_ENHANCEMENT_MASK & new_data;
+    _function_data = (
+        _function_data & (~LOW_GS_ENHANCEMENT_MASK) |
+        (LOW_GS_ENHANCEMENT_MASK & new_data)
+    );
 }
 
 void TLC5957::setColorControl(uint16_t cc)
@@ -295,7 +325,6 @@ void TLC5957::setColorControl(uint16_t cc)
 
 void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
 {
-    Serial.printf("%d.%d.%d\n", ccr, ccg, ccb);
     uint64_t new_data = 0;
 
     if (ccr > 511)
@@ -310,14 +339,10 @@ void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
         ccb = 511;
     new_data |= (((uint64_t)ccb) << 14);
 
-    Serial.printf("%016llX\n", _function_data);
     _function_data = (
         _function_data & (~COLOR_CONTROL_MASK) |
         (COLOR_CONTROL_MASK & new_data)
     );
-    Serial.printf("%016llX\n", new_data);
-    Serial.printf("%016llX\n", COLOR_CONTROL_MASK);
-    Serial.printf("%016llX\n", _function_data);
     _CC[0] = ccr;
     _CC[1] = ccg;
     _CC[2] = ccb;
@@ -335,7 +360,10 @@ void TLC5957::setBrightnessControl(uint8_t bc)
     if (bc > 7)
         bc = 7;
     uint64_t new_data = ((uint64_t)bc) << 41;
-    _function_data |= BRIGHTNESS_CONTROL_MASK & new_data;
+    _function_data = (
+        _function_data & (~BRIGHTNESS_CONTROL_MASK) |
+        (BRIGHTNESS_CONTROL_MASK & new_data)
+    );
     _BC = bc;
 }
 
@@ -347,13 +375,19 @@ uint8_t TLC5957::getBrightnessControl()
 void TLC5957::setPokerMode(bool poker_mode_bit)
 {
     uint64_t new_data = (uint64_t)poker_mode_bit << 44;
-    _function_data |= POKER_MODE_MASK & new_data;
+    _function_data = (
+        _function_data & (~POKER_MODE_MASK) |
+        (POKER_MODE_MASK & new_data)
+    );
 }
 
 void TLC5957::setFirstLineImprovement(uint8_t first_line_improvement)
 {
     uint64_t new_data = ((uint64_t)first_line_improvement) << 45;
-    _function_data |= FIRST_LINE_IMPROVEMENT_MASK & new_data;
+    _function_data = (
+        _function_data & (~FIRST_LINE_IMPROVEMENT_MASK) |
+        (FIRST_LINE_IMPROVEMENT_MASK & new_data)
+    );
 }
 
 void TLC5957::updateControl()
