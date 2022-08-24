@@ -296,12 +296,11 @@ void TLC5957::setColorControl(uint16_t cc)
 void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
 {
     Serial.printf("%d.%d.%d", ccr, ccg, ccb);
-    Serial.printf("tlc_setting\n");
     uint64_t new_data = 0;
 
     if (ccr > 511)
         ccr = 511;
-    new_data |= ccr << 14;
+    new_data |= ccr << 32;
 
     if (ccg > 511)
         ccg = 511;
@@ -309,10 +308,10 @@ void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
 
     if (ccb > 511)
         ccb = 511;
-    new_data |= ((uint64_t)ccb) << 32;
+    new_data |= ((uint64_t)ccb) << 14;
+    Serial.printf("%d\n", new_data);
 
     _function_data |= COLOR_CONTROL_MASK & new_data;
-    Serial.printf("%d.%d.%d", (_function_data >> 32) & 0x01FF, (_function_data >> 23) & 0x01FF, (_function_data >> 14) & 0x01FF);
     _CC[0] = ccr;
     _CC[1] = ccg;
     _CC[2] = ccb;
@@ -320,8 +319,7 @@ void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
 
 void TLC5957::getColorControl(uint16_t* colorControl)
 {
-    colorControl[0] = 0;
-    // colorControl[0] = (_function_data >> 32) & 0x01FF;
+    colorControl[0] = (_function_data >> 32) & 0x01FF;
     colorControl[1] = (_function_data >> 23) & 0x01FF;
     colorControl[2] = (_function_data >> 14) & 0x01FF;
 }
