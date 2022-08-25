@@ -28,7 +28,6 @@ class TLC5957
         uint32_t getSpiBaudRate();
         void setGsclkFreq(uint32_t gsclk_frequency);
         uint32_t getGsclkFreq();
-        void latch(int num_edges);
         void latch(uint16_t data, uint8_t data_len, uint8_t num_edges);
 
         // control led
@@ -36,7 +35,7 @@ class TLC5957
         void setAllLedRgb(uint16_t red, uint16_t green, uint16_t blue);
         void setLed(int led_number, uint16_t red, uint16_t green, uint16_t blue);
         void setLed(int led_number, uint16_t rgb);
-        int updateLeds(double* output_current);
+        int updateLeds(double* output_current, int clear);
         void clearLeds();
 
         // led intensities

@@ -36,8 +36,6 @@ void TLC5957::init(uint8_t lat, uint8_t spi_mosi, uint8_t spi_clk, uint8_t gsclk
 
     pinMode(this->_lat, OUTPUT);
     digitalWrite(this->_lat, LOW);
-    pinMode(this->_gsclk, OUTPUT);
-    setGsclkFreq(DEFAULT_GSCLK_FREQUENCY);
 }
 
 void TLC5957::setSpiBaudRate(uint32_t baud_rate)
@@ -64,36 +62,48 @@ uint32_t TLC5957::getGsclkFreq()
     return _gsclk_frequency;
 }
 
-void TLC5957::latch(int num_edges)
-{
-    // TODO: do I  need to enforce integer division??
-    int lat_delay_microseconds = _spi_baud_rate / 1'000'000;
-    delayMicroseconds(lat_delay_microseconds);
-    digitalWrite(_lat, HIGH);
-    delayMicroseconds(lat_delay_microseconds * num_edges);
-    digitalWrite(_lat, LOW);
-    delayMicroseconds(lat_delay_microseconds);
-}
-
 // https://www.ti.com/lit/ds/symlink/tlc5957.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&ts=1648586629571
 // Page 10-12
 void TLC5957::latch(uint16_t data, uint8_t data_len, uint8_t num_edges)
 {
-    Serial.printf("manual latch\n");
-    uint64_t buffer_delay_us = 1000;
+    int spi_delay_us = 1 / this->_spi_baud_rate / 2 * 1'000'000;
+
     SPI.end();
+    pinMode(_spi_clk, OUTPUT);
+    pinMode(_spi_mosi, OUTPUT);
+
+    uint8_t bit_to_send;
+    uint8_t remaining_bits;
+    uint8_t iterate;
+
     digitalWrite(_spi_clk, LOW);
-    for (uint8_t i = data_len - 1; i >= 0; i--)
-    {
-        digitalWrite(_spi_mosi, data >> i & 1);
-        digitalWrite(_spi_clk, HIGH);
-        delayMicroseconds(buffer_delay_us);
-        digitalWrite(_spi_clk, LOW);
-        if (i == num_edges - 1)
-            digitalWrite(_lat, HIGH);
-        else if (i == 0)
-            digitalWrite(_lat, LOW);
+    delayMicroseconds(spi_delay_us);
+    if (data_len > 0) {
+        digitalWrite(_lat, LOW);
+        iterate = data_len;
+    } else {
+        digitalWrite(_lat, HIGH);
+        iterate = num_edges;
     }
+
+    for (uint8_t i = 0; i < iterate; i++)
+    {
+        if (data_len > 0) {
+            remaining_bits = data_len - i;
+            bit_to_send = (data >> (remaining_bits - 1)) & 0x01;
+            digitalWrite(_spi_mosi, bit_to_send);
+            if (remaining_bits == num_edges) {
+                digitalWrite(_lat, HIGH);
+            }
+        }
+        delayMicroseconds(spi_delay_us);
+        digitalWrite(_spi_clk, HIGH);
+        delayMicroseconds(spi_delay_us);
+        digitalWrite(_spi_clk, LOW);
+    }
+    delayMicroseconds(spi_delay_us);
+    digitalWrite(_spi_mosi, LOW);
+    digitalWrite(_lat, LOW);
     SPI.begin();
 }
 
@@ -143,40 +153,37 @@ void TLC5957::setLed(int led_number, uint16_t rgb)
     grayscale_data[chip][channel][0] = rgb;
 }
 
-int TLC5957::updateLeds(double* output_current)
+int TLC5957::updateLeds(double* output_current, int clear)
 {
     double power_output_amps = getTotalCurrent();
     if (output_current != nullptr)
         *output_current = power_output_amps;
     if (enforce_max_current && power_output_amps > max_current_amps)
         return 1;
+
     // TODO: timing for latch changes if poker mode is activated
-    latch(WRTGS);
-    for (int8_t chip = (int8_t)tlc_count - 1; chip >= 0; chip--)
+    uint16_t data_to_send;
+    // for (int8_t chip = (int8_t)tlc_count - 1; chip >= 0; chip--)
+    // https://www.ti.com/lit/ds/symlink/tlc5957.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&ts=1648586629571
+    // Page 17, Figure 11
+    for (int8_t chip = 0; chip >= 0; chip--)
     {
         for (int8_t led_channel_index = (int8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
         {
-            for (int8_t color_channel_index = (int8_t)COLOR_CHANNEL_COUNT - 1; color_channel_index >= 0; color_channel_index--)
-            {
-                SPI.transfer16(grayscale_data[chip][led_channel_index][color_channel_index]);
-
-
-
-
-                // TODO; assuming color channel index order is (r: 0, g: 1, b:2)
-                // if (chip > 0 && led_channel_index > 0 && color_channel_index > 0)
-                // {
-                    // SPI.transfer16(grayscale_data[chip][led_channel_index][color_channel_index]);
-                // }
-                // else
-                // {
-                    // Serial.printf("second latch attempt\n");
-                    // manually send last 16 bits
-                    // latch(grayscale_data[0][0][0], 16, LATGS);
-                    // Serial.printf("second latch\n");
-                // }
+            uint8_t num_edges;
+            if (led_channel_index == 0) {
+                num_edges = LATGS;
+            } else {
+                num_edges = WRTGS;
             }
-            latch(LATGS);
+            SPI.beginTransaction(mSettings);
+            data_to_send = grayscale_data[chip][led_channel_index][2];
+            SPI.transfer16(data_to_send);
+            data_to_send = grayscale_data[chip][led_channel_index][1];
+            SPI.transfer16(data_to_send);
+            SPI.endTransaction();
+            data_to_send = grayscale_data[chip][led_channel_index][0];
+            latch(data_to_send, 16, num_edges);
         }
     }
     return 0;
@@ -184,25 +191,7 @@ int TLC5957::updateLeds(double* output_current)
 
 void TLC5957::clearLeds()
 {
-    latch(WRTGS);
-    for (uint8_t chip = (uint8_t)tlc_count - 1; chip >= 0; chip--)
-    {
-        for (uint8_t led_channel_index = (uint8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
-        {
-            for (uint8_t color_channel_index = (uint8_t)COLOR_CHANNEL_COUNT - 1; color_channel_index >= 0; color_channel_index--)
-            {
-                if (chip > 0 && led_channel_index > 0 && color_channel_index > 0)
-                {
-                    SPI.transfer16(0);
-                }
-                else
-                {
-                    // manually send last 16 bits
-                    latch((uint16_t)0, 16, LATGS);
-                }
-            }
-        }
-    }
+    updateLeds(nullptr, 1);
 }
 
 void TLC5957::getLedCurrents(double* currents, uint16_t* gs)
@@ -239,7 +228,7 @@ void TLC5957::setLodDetection(uint8_t lod)
 {
     uint64_t new_data = ((uint64_t)lod) << 1;
     _function_data = (
-        _function_data & (~LOD_DETECTION_MASK) |
+        (_function_data & (~LOD_DETECTION_MASK)) |
         (LOD_DETECTION_MASK & new_data)
     );
 }
@@ -248,7 +237,7 @@ void TLC5957::setTdSelection(uint8_t td)
 {
     uint64_t new_data = ((uint64_t)td) << 2;
     _function_data = (
-        _function_data & (~TD_SELECTION_MASK) |
+        (_function_data & (~TD_SELECTION_MASK)) |
         (TD_SELECTION_MASK & new_data)
     );
 }
@@ -257,7 +246,7 @@ void TLC5957::setGroupDelaySelect(bool group_delay_bit)
 {
     uint64_t new_data = group_delay_bit << 4;
     _function_data = (
-        _function_data & (~GROUP_DELAY_SELECT_MASK) |
+        (_function_data & (~GROUP_DELAY_SELECT_MASK)) |
         (GROUP_DELAY_SELECT_MASK & new_data)
     );
 }
@@ -266,7 +255,7 @@ void TLC5957::setRefreshMode(bool refresh_mode_bit)
 {
     uint64_t new_data = refresh_mode_bit << 5;
     _function_data = (
-        _function_data & (~REFRESH_MODE_MASK) |
+        (_function_data & (~REFRESH_MODE_MASK)) |
         (REFRESH_MODE_MASK & new_data)
     );
 }
@@ -275,7 +264,7 @@ void TLC5957::setGclkEdgeSelect(bool gsclk_edge_bit)
 {
     uint64_t new_data = gsclk_edge_bit << 6;
     _function_data = (
-        _function_data & (~GSCLK_EDGE_SELECT_MASK) |
+        (_function_data & (~GSCLK_EDGE_SELECT_MASK)) |
         (GSCLK_EDGE_SELECT_MASK & new_data)
     );
 }
@@ -284,7 +273,7 @@ void TLC5957::setPrechargeMode(bool precharge_bit)
 {
     uint64_t new_data = precharge_bit << 7;
     _function_data = (
-        _function_data & (~PRECHARGE_MODE_MASK) |
+        (_function_data & (~PRECHARGE_MODE_MASK)) |
         (PRECHARGE_MODE_MASK & new_data)
     );
 }
@@ -293,7 +282,7 @@ void TLC5957::setEspwm(bool espwm_bit)
 {
     uint64_t new_data = espwm_bit << 8;
     _function_data = (
-        _function_data & (~ESPWM_MASK) |
+        (_function_data & (~ESPWM_MASK)) |
         (ESPWM_MASK & new_data)
     );
 }
@@ -302,7 +291,7 @@ void TLC5957::setBlueCompensation(bool blue_compensation_bit)
 {
     uint64_t new_data = blue_compensation_bit << 9;
     _function_data = (
-        _function_data & (~BLUE_COMPENSATION_MASK) |
+        (_function_data & (~BLUE_COMPENSATION_MASK)) |
         (BLUE_COMPENSATION_MASK & new_data)
     );
 }
@@ -311,7 +300,7 @@ void TLC5957::setSclkEdgeSelect(bool sclk_edge_bit)
 {
     uint64_t new_data = sclk_edge_bit << 10;
     _function_data = (
-        _function_data & (~SCLK_EDGE_SELECT) |
+        (_function_data & (~SCLK_EDGE_SELECT)) |
         (SCLK_EDGE_SELECT & new_data)
     );
 }
@@ -320,7 +309,7 @@ void TLC5957::setLowGsEnhancement(uint8_t enhancement)
 {
     uint64_t new_data = ((uint64_t)enhancement) << 11;
     _function_data = (
-        _function_data & (~LOW_GS_ENHANCEMENT_MASK) |
+        (_function_data & (~LOW_GS_ENHANCEMENT_MASK)) |
         (LOW_GS_ENHANCEMENT_MASK & new_data)
     );
 }
@@ -347,7 +336,7 @@ void TLC5957::setColorControl(uint16_t ccr, uint16_t ccg, uint16_t ccb)
     new_data |= (((uint64_t)ccb) << 14);
 
     _function_data = (
-        _function_data & (~COLOR_CONTROL_MASK) |
+        (_function_data & (~COLOR_CONTROL_MASK)) |
         (COLOR_CONTROL_MASK & new_data)
     );
     _CC[0] = ccr;
@@ -368,7 +357,7 @@ void TLC5957::setBrightnessControl(uint8_t bc)
         bc = 7;
     uint64_t new_data = ((uint64_t)bc) << 41;
     _function_data = (
-        _function_data & (~BRIGHTNESS_CONTROL_MASK) |
+        (_function_data & (~BRIGHTNESS_CONTROL_MASK)) |
         (BRIGHTNESS_CONTROL_MASK & new_data)
     );
     _BC = bc;
@@ -383,7 +372,7 @@ void TLC5957::setPokerMode(bool poker_mode_bit)
 {
     uint64_t new_data = (uint64_t)poker_mode_bit << 44;
     _function_data = (
-        _function_data & (~POKER_MODE_MASK) |
+        (_function_data & (~POKER_MODE_MASK)) |
         (POKER_MODE_MASK & new_data)
     );
 }
@@ -392,39 +381,25 @@ void TLC5957::setFirstLineImprovement(uint8_t first_line_improvement)
 {
     uint64_t new_data = ((uint64_t)first_line_improvement) << 45;
     _function_data = (
-        _function_data & (~FIRST_LINE_IMPROVEMENT_MASK) |
+        (_function_data & (~FIRST_LINE_IMPROVEMENT_MASK)) |
         (FIRST_LINE_IMPROVEMENT_MASK & new_data)
     );
 }
 
 void TLC5957::updateControl()
 {
-
-    // Serial.printf("tlc_update\n");
     uint8_t word_size = 8; // bits
     uint8_t num_words = FC_BITS / word_size;
-    uint8_t buffer;
+    uint8_t byte_to_send;
 
-    latch(FCWRTEN);
-    // Serial.printf("first_latch\n");
-    // send first 5 bytes
-    // Serial.printf("%" PRIu64 "\n", _function_data);
-    // for (uint8_t i = num_words; i > 0; i--)
-    // {
-    //     buffer = _function_data >> (8 * i) & 255;
-    //     // Serial.printf("%d.", buffer);
-    //     SPI.transfer(buffer);
-    // }
-    // latch(WRTFC);
-    // Serial.printf("\n");
+    latch(0, 0, FCWRTEN);
+    SPI.beginTransaction(mSettings);
+    for (uint8_t i = 0; i < num_words - 1; i++)
+    {
+        byte_to_send = ((_function_data >> ((num_words - i - 1) * 8)) & 0xFF);
+        SPI.transfer(byte_to_send);
+    }
+    SPI.endTransaction();
     // manually send last 8 bits
-    // latch((uint16_t)_function_data, 8, FCWRTEN);
+    latch((uint16_t)(_function_data & 0xFF), word_size, WRTFC);
 }
-
-
-
-
-
-
-
-
