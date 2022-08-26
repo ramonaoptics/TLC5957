@@ -13,7 +13,7 @@
 #define WRTGS 1
 #define LATGS 3
 
-#define DEFAULT_SPI_BAUD_RATE 1'000'000
+#define DEFAULT_SPI_BAUD_RATE 500'000
 #define DEFAULT_GSCLK_FREQUENCY 2'500'000
 
 void TLC5957::init(uint8_t lat, uint8_t spi_mosi, uint8_t spi_clk, uint8_t gsclk)
@@ -154,6 +154,8 @@ int TLC5957::updateLeds(double* output_current, int clear)
         return 1;
     }
 
+    analogWrite(_gsclk, 0);
+
     // TODO: timing for latch changes if poker mode is activated
     // https://www.ti.com/lit/ds/symlink/tlc5957.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&ts=1648586629571
     // Page 17, Figure 11
@@ -186,6 +188,7 @@ int TLC5957::updateLeds(double* output_current, int clear)
         data_to_send = grayscale_data[chip][led_channel_index][0];
         latch(data_to_send, 16, num_edges);
     }
+    analogWrite(_gsclk, 1);
     return 0;
 }
 
