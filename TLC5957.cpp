@@ -13,7 +13,7 @@
 #define WRTGS 1
 #define LATGS 3
 
-#define DEFAULT_SPI_BAUD_RATE 500'000
+#define DEFAULT_SPI_BAUD_RATE 1'000'000
 #define DEFAULT_GSCLK_FREQUENCY 2'500'000
 
 void TLC5957::init(uint8_t lat, uint8_t spi_mosi, uint8_t spi_clk, uint8_t gsclk)
@@ -149,7 +149,10 @@ int TLC5957::updateLeds(double* output_current, int clear)
     if (output_current != nullptr)
         *output_current = power_output_amps;
     if (enforce_max_current && power_output_amps > max_current_amps)
+    {
+        Serial.printf("%f.overcurrent", power_output_amps);
         return 1;
+    }
 
     // TODO: timing for latch changes if poker mode is activated
     // https://www.ti.com/lit/ds/symlink/tlc5957.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&ts=1648586629571
@@ -204,6 +207,7 @@ void TLC5957::getLedCurrents(double* currents, uint16_t* gs)
 
 double TLC5957::getTotalCurrent()
 {
+    uint8_t total_channels = COLOR_CHANNEL_COUNT *  LEDS_PER_CHIP * tlc_count;
     uint32_t totalCurrent_channel[COLOR_CHANNEL_COUNT];
     for (uint8_t color_channel_index = 0; color_channel_index < COLOR_CHANNEL_COUNT; color_channel_index++)
         totalCurrent_channel[color_channel_index] = 0;
@@ -215,8 +219,10 @@ double TLC5957::getTotalCurrent()
 
     double totalCurrent = 0;
     for (uint8_t color_channel_index = 0; color_channel_index < COLOR_CHANNEL_COUNT; color_channel_index++)
-        totalCurrent += (_maxOutputCurrent * _CC[color_channel_index] / 511 * _BC)
-                        * (totalCurrent_channel[color_channel_index] / 0xFFFF);
+    {
+        double current = (_maxOutputCurrent * (double)_CC[color_channel_index] / 511 * _gainRatioValues[_BC]);
+        totalCurrent += current * (double)totalCurrent_channel[color_channel_index] / (0xFFFF * total_channels);
+    }
 
     return totalCurrent;
 }
