@@ -13,7 +13,7 @@
 #define WRTGS 1
 #define LATGS 3
 
-#define DEFAULT_SPI_BAUD_RATE 1'000'000
+#define DEFAULT_SPI_BAUD_RATE 500'000
 #define DEFAULT_GSCLK_FREQUENCY 2'500'000
 
 void TLC5957::init(uint8_t lat, uint8_t spi_mosi, uint8_t spi_clk, uint8_t gsclk)
@@ -74,27 +74,16 @@ void TLC5957::latch(uint16_t data, uint8_t data_len, uint8_t num_edges)
 
     uint8_t bit_to_send;
     uint8_t remaining_bits;
-    uint8_t iterate;
 
     digitalWrite(_spi_clk, LOW);
     delayMicroseconds(spi_delay_us);
-    if (data_len > 0) {
-        digitalWrite(_lat, LOW);
-        iterate = data_len;
-    } else {
-        digitalWrite(_lat, HIGH);
-        iterate = num_edges;
-    }
-
-    for (uint8_t i = 0; i < iterate; i++)
+    for (uint8_t i = 0; i < data_len; i++)
     {
-        if (data_len > 0) {
-            remaining_bits = data_len - i;
-            bit_to_send = (data >> (remaining_bits - 1)) & 0x01;
-            digitalWrite(_spi_mosi, bit_to_send);
-            if (remaining_bits == num_edges) {
-                digitalWrite(_lat, HIGH);
-            }
+        remaining_bits = data_len - i;
+        bit_to_send = (data >> (remaining_bits - 1)) & 0x01;
+        digitalWrite(_spi_mosi, bit_to_send);
+        if (remaining_bits == num_edges) {
+            digitalWrite(_lat, HIGH);
         }
         delayMicroseconds(spi_delay_us);
         digitalWrite(_spi_clk, HIGH);
@@ -155,6 +144,7 @@ void TLC5957::setLed(int led_number, uint16_t rgb)
 
 int TLC5957::updateLeds(double* output_current, int clear)
 {
+    int chip;
     double power_output_amps = getTotalCurrent();
     if (output_current != nullptr)
         *output_current = power_output_amps;
@@ -162,29 +152,36 @@ int TLC5957::updateLeds(double* output_current, int clear)
         return 1;
 
     // TODO: timing for latch changes if poker mode is activated
-    uint16_t data_to_send;
-    // for (int8_t chip = (int8_t)tlc_count - 1; chip >= 0; chip--)
     // https://www.ti.com/lit/ds/symlink/tlc5957.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&ts=1648586629571
     // Page 17, Figure 11
-    for (int8_t chip = 0; chip >= 0; chip--)
+    uint16_t data_to_send;
+    uint8_t num_edges;
+    for (int8_t led_channel_index = (int8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
     {
-        for (int8_t led_channel_index = (int8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
+        if (led_channel_index == 0) {
+            num_edges = LATGS;
+        } else {
+            num_edges = WRTGS;
+        }
+        SPI.beginTransaction(mSettings);
+        for (chip = (int)tlc_count - 1; chip > 0; chip--)
         {
-            uint8_t num_edges;
-            if (led_channel_index == 0) {
-                num_edges = LATGS;
-            } else {
-                num_edges = WRTGS;
-            }
-            SPI.beginTransaction(mSettings);
             data_to_send = grayscale_data[chip][led_channel_index][2];
             SPI.transfer16(data_to_send);
             data_to_send = grayscale_data[chip][led_channel_index][1];
             SPI.transfer16(data_to_send);
-            SPI.endTransaction();
             data_to_send = grayscale_data[chip][led_channel_index][0];
-            latch(data_to_send, 16, num_edges);
+            SPI.transfer16(data_to_send);
         }
+
+        data_to_send = grayscale_data[chip][led_channel_index][2];
+        SPI.transfer16(data_to_send);
+        data_to_send = grayscale_data[chip][led_channel_index][1];
+        SPI.transfer16(data_to_send);
+        SPI.endTransaction();
+
+        data_to_send = grayscale_data[chip][led_channel_index][0];
+        latch(data_to_send, 16, num_edges);
     }
     return 0;
 }
@@ -388,18 +385,31 @@ void TLC5957::setFirstLineImprovement(uint8_t first_line_improvement)
 
 void TLC5957::updateControl()
 {
-    uint8_t word_size = 8; // bits
-    uint8_t num_words = FC_BITS / word_size;
-    uint8_t byte_to_send;
+    // int chip;
+    uint8_t word_size = 16; // bits
+    uint16_t word_to_send = 0;
 
-    latch(0, 0, FCWRTEN);
     SPI.beginTransaction(mSettings);
-    for (uint8_t i = 0; i < num_words - 1; i++)
+    for (int8_t chip = tlc_count - 1; chip > 0; chip--)
     {
-        byte_to_send = ((_function_data >> ((num_words - i - 1) * 8)) & 0xFF);
-        SPI.transfer(byte_to_send);
+        word_to_send = (_function_data >> 32) & 0xFFFF;
+        SPI.transfer16(word_to_send);
+        word_to_send = (_function_data >> 16) & 0xFFFF;
+        SPI.transfer16(word_to_send);
+        word_to_send = (_function_data >> 0) & 0xFFFF;
+        if (chip != 1) {
+            SPI.transfer16(word_to_send);
+        }
     }
     SPI.endTransaction();
+
+    latch(word_to_send, 16, FCWRTEN);
+    SPI.beginTransaction(mSettings);
+    word_to_send = (_function_data >> 32) & 0xFFFF;
+    SPI.transfer16(word_to_send);
+    word_to_send = (_function_data >> 16) & 0xFFFF;
+    SPI.transfer16(word_to_send);
+    SPI.endTransaction();
     // manually send last 8 bits
-    latch((uint16_t)(_function_data & 0xFF), word_size, WRTFC);
+    latch((uint16_t)(_function_data & 0xFFFF), word_size, WRTFC);
 }
