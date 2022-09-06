@@ -4,21 +4,6 @@
 #include <stdint.h>
 #include <SPI.h>
 
-#define LOD_DETECTION_MASK ((uint64_t)0b11)
-#define TD_SELECTION_MASK ((uint64_t)0b11 << 2)
-#define GROUP_DELAY_SELECT_MASK ((uint64_t)0b1 << 4)
-#define REFRESH_MODE_MASK ((uint64_t)0b1 << 5)
-#define GSCLK_EDGE_SELECT_MASK ((uint64_t)0b1 << 6)
-#define PRECHARGE_MODE_MASK ((uint64_t)0b1 << 7)
-#define ESPWM_MASK ((uint64_t)0b1 << 8)
-#define BLUE_COMPENSATION_MASK ((uint64_t)0b1 << 9)
-#define SCLK_EDGE_SELECT ((uint64_t)0b1 << 10)
-#define LOW_GS_ENHANCEMENT_MASK ((uint64_t)0b111 << 11)
-#define COLOR_CONTROL_MASK ((uint64_t)0x7FFFFFF << 14)
-#define BRIGHTNESS_CONTROL_MASK ((uint64_t)0b111 << 41)
-#define POKER_MODE_MASK ((uint64_t)0b1 << 44)
-#define FIRST_LINE_IMPROVEMENT_MASK ((uint64_t)0b111 << 45)
-
 class TLC5957
 {
     public:

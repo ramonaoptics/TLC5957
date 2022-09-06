@@ -16,6 +16,21 @@
 #define DEFAULT_SPI_BAUD_RATE 500'000
 #define DEFAULT_GSCLK_FREQUENCY 2'500'000
 
+#define LOD_DETECTION_MASK ((uint64_t)0b11)
+#define TD_SELECTION_MASK ((uint64_t)0b11 << 2)
+#define GROUP_DELAY_SELECT_MASK ((uint64_t)0b1 << 4)
+#define REFRESH_MODE_MASK ((uint64_t)0b1 << 5)
+#define GSCLK_EDGE_SELECT_MASK ((uint64_t)0b1 << 6)
+#define PRECHARGE_MODE_MASK ((uint64_t)0b1 << 7)
+#define ESPWM_MASK ((uint64_t)0b1 << 8)
+#define BLUE_COMPENSATION_MASK ((uint64_t)0b1 << 9)
+#define SCLK_EDGE_SELECT ((uint64_t)0b1 << 10)
+#define LOW_GS_ENHANCEMENT_MASK ((uint64_t)0b111 << 11)
+#define COLOR_CONTROL_MASK ((uint64_t)0x7FFFFFF << 14)
+#define BRIGHTNESS_CONTROL_MASK ((uint64_t)0b111 << 41)
+#define POKER_MODE_MASK ((uint64_t)0b1 << 44)
+#define FIRST_LINE_IMPROVEMENT_MASK ((uint64_t)0b111 << 45)
+
 void TLC5957::init(uint8_t lat, uint8_t spi_mosi, uint8_t spi_clk, uint8_t gsclk)
 {
     this->_lat = lat;
@@ -394,8 +409,6 @@ void TLC5957::setFirstLineImprovement(uint8_t first_line_improvement)
 
 void TLC5957::updateControl()
 {
-    // int chip;
-    uint8_t word_size = 16; // bits
     uint16_t word_to_send = 0;
 
     SPI.beginTransaction(mSettings);
@@ -420,5 +433,5 @@ void TLC5957::updateControl()
     SPI.transfer16(word_to_send);
     SPI.endTransaction();
     // manually send last 8 bits
-    latch((uint16_t)(_function_data & 0xFFFF), word_size, WRTFC);
+    latch((uint16_t)(_function_data & 0xFFFF), 16, WRTFC);
 }
