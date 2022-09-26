@@ -13,8 +13,8 @@
 #define WRTGS 1
 #define LATGS 3
 
-#define DEFAULT_SPI_BAUD_RATE 500'000
-#define DEFAULT_GSCLK_FREQUENCY 2'500'000
+#define DEFAULT_SPI_BAUD_RATE 4'000'000
+#define DEFAULT_GSCLK_FREQUENCY 3'500'000
 
 #define LOD_DETECTION_MASK ((uint64_t)0b11)
 #define TD_SELECTION_MASK ((uint64_t)0b11 << 2)
@@ -411,6 +411,8 @@ void TLC5957::updateControl()
 {
     uint16_t word_to_send = 0;
 
+    analogWrite(_gsclk, 0);
+
     SPI.beginTransaction(mSettings);
     for (int8_t chip = tlc_count - 1; chip > 0; chip--)
     {
@@ -434,4 +436,6 @@ void TLC5957::updateControl()
     SPI.endTransaction();
     // manually send last 8 bits
     latch((uint16_t)(_function_data & 0xFFFF), 16, WRTFC);
+    analogWrite(_gsclk, 1);
+
 }
