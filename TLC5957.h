@@ -73,7 +73,7 @@ class TLC5957
         const double _gainRatioValues[8] = {0.129, 0.256, 0.379, 0.524, 0.647, 0.733, 0.917, 1.0};
         // TODO: I_OLCMAX set by R_IREF resistor
         // TODO: think of more descriptive var name there are so many different "maxCurrents" ..
-        const double _maxOutputCurrent = 25; // placeholder
+        const double _maxOutputCurrent = 25E-3; // placeholder
 
         // SPI
         SPISettings mSettings;
