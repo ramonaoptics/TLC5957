@@ -1,3 +1,3 @@
-**Arduino Library for TLC5957 Controller**
+# Teensy Library for TLC5957 Controller
 
 TODO
