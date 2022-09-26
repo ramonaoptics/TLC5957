@@ -214,12 +214,17 @@ void TLC5957::clearLeds()
 
 void TLC5957::getLedCurrents(double* currents, uint16_t* gs)
 {
+
     for (int color_channel_index = 0; color_channel_index < COLOR_CHANNEL_COUNT; color_channel_index++)
     {
         // https://www.ti.com/lit/ds/symlink/tlc5957.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&ts=1648586629571
         // Page 8 (Equation 1 & Equation 2)
-        currents[color_channel_index] = (_maxOutputCurrent * _CC[color_channel_index] / 511 * _BC)
-                                            * (gs[color_channel_index] / 0xFFFF);
+        currents[color_channel_index] = (
+            _maxOutputCurrent *
+            (((double)(_CC[color_channel_index])) / 511) *
+            _gainRatioValues[_BC] *
+            (((double)(gs[color_channel_index])) / 0xFFFF)
+        );
     }
 }
 
@@ -238,8 +243,8 @@ double TLC5957::getTotalCurrent()
     double totalCurrent = 0;
     for (uint8_t color_channel_index = 0; color_channel_index < COLOR_CHANNEL_COUNT; color_channel_index++)
     {
-        double current = (_maxOutputCurrent * (double)_CC[color_channel_index] / 511 * _gainRatioValues[_BC]);
-        totalCurrent += current * (double)totalCurrent_channel[color_channel_index] / (0xFFFF * total_channels);
+        double current = (_maxOutputCurrent * ((double)_CC[color_channel_index]) / 511 * _gainRatioValues[_BC]);
+        totalCurrent += current * ((double)(totalCurrent_channel[color_channel_index]) / 0xFFFF);
     }
 
     return totalCurrent;
