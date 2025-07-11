@@ -47,7 +47,7 @@ class TLC5957
         void setFirstLineImprovement(uint8_t first_line_improvement);
         void updateControl();
 
-        static const uint8_t tlc_count;
+        static const int32_t tlc_count;
         static const uint8_t COLOR_CHANNEL_COUNT = 3;
         static const uint8_t LEDS_PER_CHIP = 16;
         static bool enforce_max_current;
