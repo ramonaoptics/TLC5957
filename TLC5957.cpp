@@ -113,7 +113,7 @@ void TLC5957::latch(uint16_t data, uint8_t data_len, uint8_t num_edges)
 
 void TLC5957::setAllLed(uint16_t gsvalue)
 {
-    for (int8_t chip = tlc_count - 1; chip >= 0; chip--)
+    for (int32_t chip = tlc_count - 1; chip >= 0; chip--)
     {
         for (int8_t led = 0; led < LEDS_PER_CHIP; led++)
         {
@@ -127,7 +127,7 @@ void TLC5957::setAllLedRgb(uint16_t red, uint16_t green, uint16_t blue)
 {
     if (COLOR_CHANNEL_COUNT == 3)
     {
-        for (int8_t chip = tlc_count - 1; chip >= 0; chip--)
+        for (int32_t chip = tlc_count - 1; chip >= 0; chip--)
         {
             for (int8_t channel = 0; channel < LEDS_PER_CHIP; channel++)
             {
@@ -141,7 +141,7 @@ void TLC5957::setAllLedRgb(uint16_t red, uint16_t green, uint16_t blue)
 
 void TLC5957::setLed(int led_number, uint16_t red, uint16_t green, uint16_t blue)
 {
-    int chip = led_number / LEDS_PER_CHIP;
+    int32_t chip = led_number / LEDS_PER_CHIP;
     int channel = led_number % LEDS_PER_CHIP;
     grayscale_data[chip][channel][2] = blue;
     grayscale_data[chip][channel][1] = green;
@@ -150,7 +150,7 @@ void TLC5957::setLed(int led_number, uint16_t red, uint16_t green, uint16_t blue
 
 void TLC5957::setLed(int led_number, uint16_t rgb)
 {
-    int chip = led_number / LEDS_PER_CHIP;
+    int32_t chip = led_number / LEDS_PER_CHIP;
     int channel = led_number % LEDS_PER_CHIP;
     grayscale_data[chip][channel][2] = rgb;
     grayscale_data[chip][channel][1] = rgb;
@@ -159,7 +159,7 @@ void TLC5957::setLed(int led_number, uint16_t rgb)
 
 int TLC5957::updateLeds(double* output_current, int clear)
 {
-    int chip;
+    int32_t chip;
     double power_output_amps = getTotalCurrent();
     if (output_current != nullptr)
         *output_current = power_output_amps;
@@ -176,7 +176,7 @@ int TLC5957::updateLeds(double* output_current, int clear)
     // Page 17, Figure 11
     uint16_t data_to_send;
     uint8_t num_edges;
-    for (int8_t led_channel_index = (int8_t)LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
+    for (int8_t led_channel_index = LEDS_PER_CHIP - 1; led_channel_index >= 0; led_channel_index--)
     {
         if (led_channel_index == 0) {
             num_edges = LATGS;
@@ -184,7 +184,7 @@ int TLC5957::updateLeds(double* output_current, int clear)
             num_edges = WRTGS;
         }
         SPI.beginTransaction(mSettings);
-        for (chip = (int)tlc_count - 1; chip > 0; chip--)
+        for (chip = tlc_count - 1; chip > 0; chip--)
         {
             data_to_send = grayscale_data[chip][led_channel_index][2];
             SPI.transfer16(data_to_send);
@@ -230,13 +230,12 @@ void TLC5957::getLedCurrents(double* currents, uint16_t* gs)
 
 double TLC5957::getTotalCurrent()
 {
-    uint8_t total_channels = COLOR_CHANNEL_COUNT *  LEDS_PER_CHIP * tlc_count;
     uint32_t totalCurrent_channel[COLOR_CHANNEL_COUNT];
     for (uint8_t color_channel_index = 0; color_channel_index < COLOR_CHANNEL_COUNT; color_channel_index++)
         totalCurrent_channel[color_channel_index] = 0;
 
     for (uint8_t color_channel_index = 0; color_channel_index < COLOR_CHANNEL_COUNT; color_channel_index++)
-        for (uint8_t chip = 0; chip < tlc_count; chip++)
+        for (int32_t chip = 0; chip < tlc_count; chip++)
             for (uint8_t led_channel_index = 0; led_channel_index < LEDS_PER_CHIP; led_channel_index++)
                 totalCurrent_channel[color_channel_index] += grayscale_data[chip][led_channel_index][color_channel_index];
 
@@ -419,7 +418,7 @@ void TLC5957::updateControl()
     analogWrite(_gsclk, 0);
 
     SPI.beginTransaction(mSettings);
-    for (int8_t chip = tlc_count - 1; chip > 0; chip--)
+    for (int32_t chip = tlc_count - 1; chip > 0; chip--)
     {
         word_to_send = (_function_data >> 32) & 0xFFFF;
         SPI.transfer16(word_to_send);
